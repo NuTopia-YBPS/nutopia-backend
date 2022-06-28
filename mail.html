@@ -126,14 +126,17 @@
 						<th>Team Name</th>
 						<th>Members</th>
 					</tr>
-					<tr class="{% cycle 'row_normal' 'row_highlight' %}">
-						<td>{{ event.team_name }}</td>
-						<td class="rows members-list">
-							{% for member in event.members %}
-								<p>{{ member.name }} - {{member.class}}</p>
-							{% endfor %}
-						</td>
-					</tr>
+					{% set cls = cycler("row_normal", "row_highlight") %}
+					{% for team in event.teams %}
+						<tr class="{{ cls.next() }}">
+							<td>{{ event.team_name }}</td>
+							<td class="rows members-list">
+								{% for member in team.members %}
+									<p>{{ member.name }} - {{member.class}}</p>
+								{% endfor %}
+							</td>
+						</tr>
+					{% end for %}
 				</table>
 				{% else %}
 				<table>
@@ -141,10 +144,13 @@
 						<th>Name</th>
 						<th>Class</th>
 					</tr>
-					<tr class="{% cycle 'row_normal' 'row_highlight' %}">
-						<td>{{ event.name }}</td>
-						<td>{{ event.class }}</td>
-					</tr>
+					{% set cls = cycler("row_normal", "row_highlight") %}
+					{% for participant in event.participants %}
+						<tr class="{{ cls.next() }}">
+							<td>{{ participant.name }}</td>
+							<td>{{ participant.class }}</td>
+						</tr>
+					{% endfor %}
 				</table>
 				{% end if %}
 			
