@@ -7,7 +7,7 @@ import "dotenv/config";
 import helmet from "helmet";
 import { initializeApp } from "firebase/app";
 import nodemailer from "nodemailer";
-import { renderString } from "nunjucks";
+import nunjucks from "nunjucks";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 
 import {
@@ -33,12 +33,12 @@ const app = initializeApp({
 const htmlBody = fs.readFileSync("mail.html", "utf8");
 
 const Mail = nodemailer.createTransport({
-  host: "info@nutopia.in",
-  port: 587,
-  secure: true, // true for 465, false for other ports
+  host: process.env.MAILER_HOST,
+  port: 465,
+  secure: true,
   auth: {
-    user: process.env.MAILER_EMAIL, // generated ethereal user
-    pass: process.env.MAILER_PASS, // generated ethereal password
+    user: process.env.MAILER_USER,
+    pass: process.env.MAILER_PASS,
   },
 });
 
@@ -99,17 +99,75 @@ server.post("/login", async (req, res) => {
 
   const doc = snapshot.docs[0];
   const [salt, key] = doc.get("password").split(":");
-
+  const userToken = scryptSync(schoolId, 16);
   const hashedBuffer = scryptSync(password, salt, 64);
   const keyBuffer = Buffer.from(key, "hex");
 
   const match = timingSafeEqual(hashedBuffer, keyBuffer);
 
-  return res.status(200).json({ success: Boolean(match) });
+  return res.status(200).json({ success: Boolean(match), userToken });
 });
-server.post("/register", async (req, res) => {
-  Mail.sendMail({html: renderString(htmlBody, {name: "John Doe"})});
+
+server.post("/mail", async (req, res) => {
+  Mail.sendMail({
+    from: '"NuTopia" <info@nutopia.in>',
+    to: req.body.userEmail,
+    cc: [process.env.MAILER_USER],
+    html: nunjucks.renderString(htmlBody, {
+      schoolName: "Yuvabharathi Public School",
+      events: [
+        {
+          name: "<insert event name here>",
+          isTeam: true,
+          teams: [
+            {
+              teamName: "<insert team name here>",
+              members: [
+                {
+                  name: "<insert team member name here>",
+                  class: "<insert team member class here>",
+                },
+                {
+                  name: "<insert team member name here> 1",
+                  class: "<insert team member class here> 1",
+                },
+              ],
+            },
+            {
+              teamName: "<insert team name here> 1",
+              members: [
+                {
+                  name: "<insert team member name here>",
+                  class: "<insert team member class here>",
+                },
+                {
+                  name: "<insert team member name here> 1",
+                  class: "<insert team member class here> 1",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: "<insert event name here> 1",
+          isTeam: false,
+          participants: [
+            {
+              name: "<insert team member name here>",
+              class: "<insert team member class here>",
+            },
+            {
+              name: "<insert team member name here> 1",
+              class: "<insert team member class here> 1",
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  res.send("Worked");
 });
+
 server.listen(4000, () => {
   console.log("Server running on http://localhost:4000");
 });

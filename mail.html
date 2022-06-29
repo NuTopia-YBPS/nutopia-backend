@@ -28,12 +28,20 @@
 			padding: 2ch;
 		}
 
+		p {
+			font-size: 1.15rem;
+		}
+
+		h3 {
+			font-size: 1.25rem;
+		}
+
 		table {
 			width: 100%;
 			border-collapse: collapse;
 			border-radius: 0.75rem;
 			overflow: hidden;
-			margin-block: 1rem;
+			margin: 1rem 0;
 		}
 
 		th, td {
@@ -53,6 +61,7 @@
 		td > p {
 			padding: 1ch;
 			margin: 0;
+			font-size: 1rem;
 		}
 
 		.rows {
@@ -68,8 +77,8 @@
 			color: white;
 			text-align: center;
 			font-size: 0.9rem;
-			margin-block-start: 2rem;
-			border-radius: 1em;
+			margin-top: 2rem;
+			border-radius: 1.5em;
 			background: #003c47;
 			padding: 1em
 		}
@@ -100,6 +109,10 @@
 		.address {
 			font-size: 0.95em;
 		}
+
+		.copyright {
+			font-size: 1rem;
+		}
 	</style>
 </head>
 <body class="body_container">
@@ -110,7 +123,7 @@
 		<div class="email_content">
 			<h2>Dear {{ schoolName }},</h2>
 
-			Thank you for your registration and welcome to <strong>Nutopia Season 2</strong>!
+			<p>Thank you for your registration and welcome to <strong>Nutopia Season 2</strong>!</p>
 
 			<p>This e-mail acknowledges the registration of participants from your domain.</p>
 
@@ -129,14 +142,14 @@
 					{% set cls = cycler("row_normal", "row_highlight") %}
 					{% for team in event.teams %}
 						<tr class="{{ cls.next() }}">
-							<td>{{ event.team_name }}</td>
+							<td>{{ event.name }}</td>
 							<td class="rows members-list">
 								{% for member in team.members %}
 									<p>{{ member.name }} - {{member.class}}</p>
 								{% endfor %}
 							</td>
 						</tr>
-					{% end for %}
+					{% endfor %}
 				</table>
 				{% else %}
 				<table>
@@ -152,44 +165,12 @@
 						</tr>
 					{% endfor %}
 				</table>
-				{% end if %}
+				{% endif %}
 			
 			{% endfor %}
 			
 			<p>For any change in the registration kindly write to <a href="mailto:info@nutopia.in" style="color: #00cc22;">info@nutopia.in</a></p>
 			<p>Looking for forward to your presence!</p>
-			
-			<!-- <table>
-				<tbody>
-					<tr>
-						<th>Field</th>
-						<th>Value</th>
-					</tr>
-					<tr>
-						<td>Event</td>
-						<td>
-							<p>{{event}}</p>
-						</td>
-
-					</tr>
-					{% if isTeam %} 
-						<tr class="row_highlight">
-							<td>Team Name</td>
-							<td>
-								<p>{{teamName}}</p>
-							</td>
-						</tr>
-					{% endif %}
-					<tr class="{% if not isTeam %} row_highlight {% endif %}">
-						<td>Participants</td>
-						<td class="rows">
-							{% for participant in participants %}
-								<p class="{% cycle 'row_normal' 'row_highlight' %}">{{participant.name}} - {{participant.grade}}</p>
-							{% endfor %}
-						</td>
-					</tr>
-				</tbody>
-			</table> -->
 		</div>
 	</div>
 	<div class="email_footer">
@@ -229,6 +210,6 @@
 			Somayampalayam Post, Kanuvai,<br/>
 			Coimbatore, Tamil Nadu 641108, India
 		</p>
-		<p>&copy; <a href="https://yuvabharathi.in" style="color: #00cc22">Yuvabharathi Public School</a> 2022. All Rights Reserved.</p>
+		<p class="copyright">&copy; <a href="https://yuvabharathi.in" style="color: #00cc22">Yuvabharathi Public School</a> 2022. All Rights Reserved.</p>
 	</div>
 </body>
