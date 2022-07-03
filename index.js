@@ -9,6 +9,11 @@ import { initializeApp } from "firebase/app";
 import nodemailer from "nodemailer";
 import nunjucks from "nunjucks";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+import datarex from "datarex";
+const db = new Datarex({
+  path: "./Databases/index.sqlite",
+  tableName: "userTokens",
+});
 
 import {
   getFirestore,
@@ -19,6 +24,7 @@ import {
   getDocs,
   query,
 } from "firebase/firestore";
+import Datarex from "datarex";
 
 const app = initializeApp({
   apiKey: process.env.FIREBASE_API_KEY,
@@ -99,13 +105,21 @@ server.post("/login", async (req, res) => {
 
   const doc = snapshot.docs[0];
   const [salt, key] = doc.get("password").split(":");
-  const userToken = scryptSync(schoolId, 16);
+  const userToken = scryptSync(schoolId, salt, 16);
+
   const hashedBuffer = scryptSync(password, salt, 64);
   const keyBuffer = Buffer.from(key, "hex");
 
-  const match = timingSafeEqual(hashedBuffer, keyBuffer);
+  let success = timingSafeEqual(hashedBuffer, keyBuffer);
 
-  return res.status(200).json({ success: Boolean(match), userToken });
+  await setDoc(doc(accountsCollection, schoolId), {
+    userToken: userToken.toString("hex"),
+  }).catch((e) => (success = false));
+
+  return res.status(200).json({
+    success: Boolean(match),
+    userToken: userToken.toString("hex"),
+  });
 });
 
 server.post("/mail", async (req, res) => {
@@ -165,7 +179,32 @@ server.post("/mail", async (req, res) => {
       ],
     }),
   });
-  res.send("Worked");
+});
+
+server.post("/userData", async (req, res) => {
+  if (!req.body)
+    return res.status(400).json({ success: false, message: "No body" });
+
+  const { schoolId, password } =
+    typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+
+  const accountsCollection = collection(firestore, "school_login_accounts");
+
+  const snapshot = await getDocs(
+    query(accountsCollection, where("schoolId", "==", schoolId))
+  );
+
+  if (snapshot.length === 0) return res.status(200).json({ success: false });
+
+  const doc = snapshot.docs[0];
+  const [salt, key] = doc.get("password").split(":");
+  const userToken = scryptSync(schoolId, salt, 16);
+  const hashedBuffer = scryptSync(password, salt, 64);
+  const keyBuffer = Buffer.from(key, "hex");
+
+  const match = timingSafeEqual(hashedBuffer, keyBuffer);
+
+  return res.status(200).json({ success: Boolean(match), userToken });
 });
 
 server.listen(4000, () => {
