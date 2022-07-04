@@ -1,0 +1,3 @@
+{
+  "ignore": ["/databases/index.json", "*.json", "databases/"]
+}

@@ -9,22 +9,10 @@ import { initializeApp } from "firebase/app";
 import nodemailer from "nodemailer";
 import nunjucks from "nunjucks";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
-import datarex from "datarex";
-const db = new Datarex({
-  path: "./Databases/index.sqlite",
-  tableName: "userTokens",
-});
-
-import {
-  getFirestore,
-  collection,
-  doc,
-  where,
-  setDoc,
-  getDocs,
-  query,
-} from "firebase/firestore";
-import Datarex from "datarex";
+import jsonDB from "json-database";
+const db = new jsonDB();
+db.createCollection("school_logins");
+import { getFirestore, collection, doc, where, setDoc, getDocs, query } from "firebase/firestore";
 
 const app = initializeApp({
   apiKey: process.env.FIREBASE_API_KEY,
@@ -54,7 +42,7 @@ const server = express()
   .use(
     cors({
       origin: "*",
-    })
+    }),
   )
   .use(helmet())
   .use(bp.json());
@@ -66,40 +54,32 @@ server.get("/", async (req, res) => {
 });
 
 server.post("/signup", async (req, res) => {
-  const { schoolId, password } =
-    typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  const { schoolId, password, email, phoneNumber } = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
   let success = true;
 
-  if (!req.body)
-    return res.status(400).json({ success: false, message: "No body" });
+  if (!req.body) return res.status(400).json({ success: false, message: "No body" });
 
   const salt = randomBytes(16).toString("hex");
   const hashedPass = scryptSync(password, salt, 64).toString("hex");
-  const obj = { schoolId, password: `${salt}:${hashedPass}` };
+  const obj = { schoolId, password: `${salt}:${hashedPass}`, email, phoneNumber };
 
   // Database code here
   const accountsCollection = collection(firestore, "school_login_accounts");
-  await setDoc(doc(accountsCollection, schoolId), obj).catch(
-    (e) => (success = false)
-  );
-
+  await setDoc(doc(accountsCollection, schoolId), obj).catch((e) => (success = false));
+  db.createData("school_logins", `${schoolId}`, _.defaultsDeep(obj, { realPassword: password }));
   // Send the result
-  res.status(200).json({ success, schoolId, password });
+  res.status(200).json({ success, schoolId, password, email, phoneNumber });
 });
 
 server.post("/login", async (req, res) => {
-  if (!req.body)
-    return res.status(400).json({ success: false, message: "No body" });
+  if (!req.body) return res.status(400).json({ success: false, message: "No body" });
 
-  const { schoolId, password } =
-    typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  const { schoolId, password } = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
   const accountsCollection = collection(firestore, "school_login_accounts");
 
-  const snapshot = await getDocs(
-    query(accountsCollection, where("schoolId", "==", schoolId))
-  );
+  const snapshot = await getDocs(query(accountsCollection, where("schoolId", "==", schoolId)));
 
   if (snapshot.length === 0) return res.status(200).json({ success: false });
 
@@ -182,17 +162,13 @@ server.post("/mail", async (req, res) => {
 });
 
 server.post("/userData", async (req, res) => {
-  if (!req.body)
-    return res.status(400).json({ success: false, message: "No body" });
+  if (!req.body) return res.status(400).json({ success: false, message: "No body" });
 
-  const { schoolId, password } =
-    typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  const { schoolId, password } = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
   const accountsCollection = collection(firestore, "school_login_accounts");
 
-  const snapshot = await getDocs(
-    query(accountsCollection, where("schoolId", "==", schoolId))
-  );
+  const snapshot = await getDocs(query(accountsCollection, where("schoolId", "==", schoolId)));
 
   if (snapshot.length === 0) return res.status(200).json({ success: false });
 
