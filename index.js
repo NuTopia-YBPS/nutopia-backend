@@ -24,8 +24,10 @@ const app = initializeApp({
   measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 });
 
+// Read the shitty nunjucks template from html file
 const htmlBody = fs.readFileSync("mail.html", "utf8");
 
+// Mail Provider
 const Mail = nodemailer.createTransport({
   host: process.env.MAILER_HOST,
   port: 465,
