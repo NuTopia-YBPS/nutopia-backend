@@ -9,7 +9,7 @@ import { initializeApp } from "firebase/app";
 import nodemailer from "nodemailer";
 import nunjucks from "nunjucks";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
-import jsonDB from "json-database";
+import jsonDB from "./jsonDb";
 const db = new jsonDB();
 db.createCollection("school_logins");
 import { getFirestore, collection, doc, where, setDoc, getDocs, query } from "firebase/firestore";
