@@ -1,5 +1,4 @@
 import csv from "csvtojson";
-import fs from "fs-extra";
 
 csv()
   .fromFile("./Book2.csv")
@@ -15,8 +14,5 @@ csv()
         });
       }
     });
-    // data.forEach((e, i) => {
-    //   if (Object.keys(data[i]).length !== 0) op.push(e);
-    // });
     console.log(data);
   });
