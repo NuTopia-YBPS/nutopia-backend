@@ -54,7 +54,7 @@ server.get("/", async (req, res) => {
 });
 
 server.post("/signup", async (req, res) => {
-  const { schoolId, password, email, phoneNumber } = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  const { schoolId, password, email } = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
   let success = true;
 
@@ -62,14 +62,14 @@ server.post("/signup", async (req, res) => {
 
   const salt = randomBytes(16).toString("hex");
   const hashedPass = scryptSync(password, salt, 64).toString("hex");
-  const obj = { schoolId, password: `${salt}:${hashedPass}`, email, phoneNumber };
+  const obj = { schoolId, password: `${salt}:${hashedPass}`, email };
 
   // Database code here
   const accountsCollection = collection(firestore, "school_login_accounts");
   await setDoc(doc(accountsCollection, schoolId), obj).catch((e) => (success = false));
   db.createData("school_logins", `${schoolId}`, _.defaultsDeep(obj, { realPassword: password }));
   // Send the result
-  res.status(200).json({ success, schoolId, password, email, phoneNumber });
+  res.status(200).json({ success, schoolId, password, email });
 });
 
 server.post("/login", async (req, res) => {
