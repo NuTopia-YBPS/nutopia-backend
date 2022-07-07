@@ -2,3 +2,6 @@ node_modules
 .env
 databases/*.json
 /databases
+login_pass.json
+out.json
+Book2.csv
