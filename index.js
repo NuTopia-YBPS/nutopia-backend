@@ -239,10 +239,9 @@ server.post("/validate", async (req, res) => {
     event,
     participants,
     teams,
-    platform
+    platform,
+    userToken
   } = req.body;
-  console.log(req.body)
-  return;
   let success = true;
 
   if (!req.body) return res.status(400).json({
@@ -251,16 +250,22 @@ server.post("/validate", async (req, res) => {
   });
 
   const salt = randomBytes(16).toString("hex");
-  const hashedPass = scryptSync(password, salt, 64).toString("hex");
-  const obj = {
-    schoolId,
-    password: `${salt}:${hashedPass}`,
-    email
-  };
+  const hashedPass = scryptSync(userToken, salt, 64).toString("hex");
+
 
   // Database code here
   const accountsCollection = collection(firestore, "school_login_accounts");
-  await setDoc(doc(accountsCollection, schoolId), obj).catch((e) => (success = false));
+  const userDocumentSnapShot = await getDocs(accountsCollection, where("userToken", "==", userToken)).catch(e => success = false);
+  const schoolId = userDocumentSnapShot[0].get("schoolId");
+
+  const registrationsCollection = collection(firestore, "registrations_season_2");
+  const registrationsSnapshot = await getDocs(registrationsCollection, where("schoolId", "==", schoolId));
+  for (registration in registrationsSnapshot) {
+    const teams = registration.get("teams");
+    teams.forEach((team) => {
+      team.phone
+    })
+  }
 
 });
 
