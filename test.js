@@ -13,8 +13,9 @@ data.forEach(async (school) => {
     const email = school.email;
     const body = {
         schoolId: schoolId,
+        schoolName: `${school.name}`,
         email: email,
-        password: `${password()}`
+        password: `${password()}`,
     }
 
     setTimeout(async () => {

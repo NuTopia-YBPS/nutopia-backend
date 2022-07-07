@@ -74,7 +74,8 @@ server.post("/signup", async (req, res) => {
   const {
     schoolId,
     password,
-    email
+    email,
+    schoolName
   } = req.body;
   let success = true;
 
@@ -88,7 +89,8 @@ server.post("/signup", async (req, res) => {
   const obj = {
     schoolId,
     password: `${salt}:${hashedPass}`,
-    email
+    email,
+    schoolName
   };
 
   // Database code here
@@ -243,33 +245,144 @@ server.post("/validate", async (req, res) => {
     userToken
   } = req.body;
   let success = true;
+  let message = ""
 
   if (!req.body) return res.status(400).json({
     success: false,
     message: "No body"
   });
 
-  const salt = randomBytes(16).toString("hex");
-  const hashedPass = scryptSync(userToken, salt, 64).toString("hex");
-
-
   // Database code here
   const accountsCollection = collection(firestore, "school_login_accounts");
-  const userDocumentSnapShot = await getDocs(accountsCollection, where("userToken", "==", userToken)).catch(e => success = false);
-  const schoolId = userDocumentSnapShot[0].get("schoolId");
+  const userTokenQuery = query(accountsCollection, where("userToken", "==", userToken))
+  const userDocumentSnapShot = await getDocs(userTokenQuery);
+  const userDocuments = [];
+
+  userDocumentSnapShot.forEach(doc => {
+    userDocuments.push(doc);
+    console.log(doc.get("schoolId"));
+  })
+
+  const schoolId = userDocuments[0].get("schoolId");
+
+  // console.log(schoolId);
 
   const registrationsCollection = collection(firestore, "registrations_season_2");
   const registrationsSnapshot = await getDocs(registrationsCollection, where("schoolId", "==", schoolId));
-  for (registration in registrationsSnapshot) {
-    const teams = registration.get("teams");
-    teams.forEach((team) => {
-      team.phone
-    })
-  }
+  const registrations = []
+  registrationsSnapshot.forEach(doc => {
+    registrations.push(doc);
+  })
 
+  if (registrations.length > 0) {
+
+
+    const phones = [];
+    registrations.forEach((registration) => {
+      const teamsRef = registration.get("teams")
+
+      if (teamsRef !== undefined) {
+        teamsRef.forEach((teamRef) => {
+          const membersRef = teamRef["participants"];
+          membersRef.forEach((memberRef) => {
+            phones.push(memberRef["phone"])
+          })
+        })
+      } else {
+        const participants = registration.get("participants");
+        console.log(participants)
+        participants.forEach((participant) => {
+          phones.push(participant["phone"])
+        })
+      }
+    })
+
+    let formPhones = []
+    let formNames = []
+
+    if (teams) {
+      teams.forEach(team => {
+        team.participants.forEach((participant, index) => {
+
+          let formPhones = []
+          let formNames = []
+
+          teams.forEach(team => {
+            team.participants.forEach((participant, innerIndex) => {
+              if (index !== innerIndex) {
+                formPhones.push(participant.phone)
+                formNames.push(participant.name)
+              }
+            })
+          })
+
+          if (phones.includes(participant.phone)) {
+            success = false;
+            message = `Phone number already in use (Participant ${index+1} : ${participant.phone})`
+          } else if (formPhones.includes(participant.phone)) {
+            success = false;
+            message = `Phone numbers cannot be same as other members (Participant ${index+1} : ${participant.phone})`
+          }
+
+          if (formNames.includes(participant.name)) {
+            success = false;
+            message = `Name cannot be same as other members (Participant ${index+1} : ${participant.name})`
+          }
+        })
+      })
+    } else {
+      participants.forEach((participant, index) => {
+
+        let formPhones = []
+        let formNames = []
+
+        participants.forEach((participant, innerIndex) => {
+          if (index !== innerIndex) {
+            formPhones.push(participant.phone)
+            formNames.push(participant.name)
+          }
+          console.log(index !== innerIndex, formNames)
+        })
+
+
+        if (phones.includes(participant.phone)) {
+          success = false;
+          message = `Phone number already in use (Participant ${index+1} : ${participant.phone})`
+        } else if (formPhones.includes(participant.phone)) {
+          success = false;
+          message = `Phone numbers cannot be same as participants (Participant ${index+1} : ${participant.phone})`
+        }
+
+        if (formNames.includes(participant.name)) {
+          success = false;
+          message = `Name cannot be same as other participants (Participant ${index+1} : ${participant.name})`
+        }
+      })
+    }
+
+  }
+  res.status(200).json({
+    schoolId,
+    success,
+    message
+  });
 });
 
+server.post("/user", async (req, res) => {
+  const {
+    userToken
+  } = req.body; // Database code here
+  const accountsCollection = collection(firestore, "school_login_accounts");
+  const userTokenQuery = query(accountsCollection, where("userToken", "==", userToken))
+  const userDocumentSnapShot = await getDocs(userTokenQuery);
+  const userDocuments = [];
 
+  userDocumentSnapShot.forEach((doc) => {
+    userDocuments.push(doc);
+  })
+
+  console.log(userDocuments[0].data())
+})
 server.listen(4000, () => {
   console.log("Server running on http://localhost:4000");
 });
