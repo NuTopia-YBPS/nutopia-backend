@@ -4,7 +4,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import "dotenv/config";
 import express from "express";
 import { initializeApp } from "firebase/app";
-import { collection, doc, getDocs, addDoc, getFirestore, query, setDoc, updateDoc, where, deleteDoc, deleteField } from "firebase/firestore";
+import { addDoc, collection, deleteField, doc, getDocs, getFirestore, query, setDoc, updateDoc, where } from "firebase/firestore";
 import fs from "fs-extra";
 import helmet from "helmet";
 import _ from "lodash";
@@ -125,9 +125,7 @@ server.post("/login", async (req, res) => {
       });
       return res.status(200).json({ message: "Successfully Logged in", success: true, userToken: UserToken });
     }
-  } catch (e) {
-    console.log(e);
-  }
+  } catch (e) {}
   return res.status(400).json({ message: "Unable to login", success: false });
 });
 
@@ -174,10 +172,7 @@ server.post("/mail", async (req, res) => {
 });
 
 server.post("/register", async (req, res) => {
-  const {
-    data: { event, participants, teams, platform },
-    userToken,
-  } = req.body;
+  const { event, participants, teams, platform, userToken } = req.body;
   const data = {
     event,
     participants,
@@ -203,8 +198,6 @@ server.post("/register", async (req, res) => {
   });
   const schoolId = userDocuments[0].get("schoolId");
 
-  // console.log(schoolId);
-
   const registrationsCollection = collection(firestore, "registrations_season_2");
   const registrationsSnapshot = await getDocs(registrationsCollection, where("schoolId", "==", schoolId));
   const registrations = [];
@@ -214,8 +207,19 @@ server.post("/register", async (req, res) => {
 
   if (registrations.length > 0) {
     const phones = [];
+    const tmpEvents = [];
     registrations.forEach((registration) => {
       const teamsRef = registration.get("teams");
+      if (tmpEvents.includes(registration.get("event"))) {
+        tmpEvents.push(registration.get("event"));
+      } else {
+        success = false;
+        message = "Event already registered";
+        return res.status(400).json({
+          success,
+          message,
+        });
+      }
 
       if (teamsRef !== undefined) {
         teamsRef.forEach((teamRef) => {
@@ -231,9 +235,6 @@ server.post("/register", async (req, res) => {
         });
       }
     });
-
-    // let formPhones = []
-    // let formNames = []
 
     if (teams) {
       teams.forEach((team) => {
@@ -296,9 +297,14 @@ server.post("/register", async (req, res) => {
     success,
     message,
   });
+  const Data = { ...data };
+  const vals = Object.values(data);
+  vals.forEach((val, i) => {
+    if (val === undefined) delete Data[i];
+  });
   if (success) {
     addDoc(registrationsCollection, {
-      data: data,
+      ...req.body,
       schoolId: schoolId,
     });
   }
@@ -311,7 +317,6 @@ server.post("/user", async (req, res) => {
   const userDocumentSnapShot = await getDocs(userTokenQuery);
   const userDocuments = [];
   userDocumentSnapShot.forEach((doc) => {
-    console.log(doc);
     userDocuments.push(doc);
   });
   res.status(200).json({
@@ -321,4 +326,21 @@ server.post("/user", async (req, res) => {
 server.listen(4000, () => {
   console.log("Server running on http://localhost:4000");
 });
-process.on("SIGHUP", (req, res) => {});
+
+// Error handling so the server doesn't crash
+process
+  .on("SIGHUP", () => {})
+  .on("SIGABRT", () => {})
+  .on("SIGBREAK", () => {})
+  .on("SIGKILL", () => {})
+  .on("SIGLOST", () => {})
+  .on("SIGQUIT", () => {})
+  .on("SIGPWR", () => {})
+  .on("SIGTERM", () => {})
+  .on("beforeExit", () => {})
+  .on("exit", () => {})
+  .on("multipleResolves", () => {})
+  .on("rejectionHandled", () => {})
+  .on("uncaughtException", () => {})
+  .on("unhandledRejection", () => {})
+  .on("SIGSTOP", () => {});

@@ -11,6 +11,9 @@ class DB {
     this.tmp[docName][key] = value;
     this.#save();
   }
+  deleteData(docName, key){
+    
+  }
   #save() {
     fs.writeJsonSync("./index.json", this.tmp);
   }
