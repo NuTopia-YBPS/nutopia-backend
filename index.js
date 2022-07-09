@@ -210,7 +210,7 @@ server.post("/register", async (req, res) => {
     const tmpEvents = [];
     registrations.forEach((registration) => {
       const teamsRef = registration.get("teams");
-      if (tmpEvents.includes(registration.get("event"))) {
+      if (!tmpEvents.includes(registration.get("event"))) {
         tmpEvents.push(registration.get("event"));
       } else {
         success = false;
@@ -314,51 +314,49 @@ server.post("/user", async (req, res) => {
   // Database code here
   const accountsCollection = collection(firestore, "school_login_accounts");
   const userTokenQuery = query(accountsCollection, where("userToken", "==", userToken));
-  const userDocumentSnapShot = await getDocs(userTokenQuery).catch(err => {
+  const userDocumentSnapShot = await getDocs(userTokenQuery).catch((err) => {
     return res.status(400).json({
       success: false,
-      error: err
-    })
+      error: err,
+    });
   });
   const userDocuments = [];
   userDocumentSnapShot.forEach((doc) => {
     userDocuments.push(doc);
   });
 
-  let success = userDocuments.length > 0
+  let success = userDocuments.length > 0;
 
-  const userDocument = userDocuments[0]
+  const userDocument = userDocuments[0];
 
-
-  const userData = userDocument.data()
+  const userData = userDocument.data();
 
   if (!success) {
     return res.status(404).json({
       success: false,
-      error: "User not found"
-    })
+      error: "User not found",
+    });
   }
-  
+
   res.status(200).json({
     success: success,
-    user:{
+    user: {
       schoolName: userData.schoolName,
       schoolId: userData.schoolId,
-      email: userData.email
-    }
+      email: userData.email,
+    },
   });
 });
 server.listen(4000, () => {
   console.log("Server running on http://localhost:4000");
 });
 
+
 // Error handling so the server doesn't crash
 process
   .on("SIGHUP", () => {})
   .on("SIGABRT", () => {})
   .on("SIGBREAK", () => {})
-  .on("SIGKILL", () => {})
-  .on("SIGLOST", () => {})
   .on("SIGQUIT", () => {})
   .on("SIGPWR", () => {})
   .on("SIGTERM", () => {})
