@@ -7,7 +7,7 @@ import { initializeApp } from "firebase/app";
 import { addDoc, collection, deleteField, doc, getDocs, getFirestore, query, setDoc, updateDoc, where } from "firebase/firestore";
 import fs from "fs-extra";
 import helmet from "helmet";
-import _ from "lodash";
+import _, { orderBy } from "lodash";
 import nodemailer from "nodemailer";
 import nunjucks from "nunjucks";
 import jsonDB from "./jsonDb.js";
@@ -118,15 +118,23 @@ server.post("/login", async (req, res) => {
 
   success = timingSafeEqual(hashedBuffer, keyBuffer);
   let UserToken = userToken.toString("hex");
+  const checkUsrDocumentSnapshot = getDocs(query(accountsCollection, where("schoolId", "==", schoolId)));
+  checkUsrDocumentSnapshot.forEach((usr) => {
+    if (usr.get("userToken")) {
+      success = false;
+      message = "Already logged in on a different instance";
+    }
+  });
   try {
     if (success) {
       await updateDoc(doc(accountsCollection, schoolId), {
         userToken: userToken.toString("hex"),
       });
-      return res.status(200).json({ message: "Successfully Logged in", success: true, userToken: UserToken });
+      message = "Successfully Logged in";
+      return res.status(200).json({ message, success: true, userToken: UserToken });
     }
   } catch (e) {}
-  return res.status(400).json({ message: "Unable to login", success: false });
+  return res.status(400).json({ message, success: false });
 });
 
 server.post("/logout", async (req, res) => {
@@ -350,7 +358,6 @@ server.post("/user", async (req, res) => {
 server.listen(4000, () => {
   console.log("Server running on http://localhost:4000");
 });
-
 
 // Error handling so the server doesn't crash
 process
