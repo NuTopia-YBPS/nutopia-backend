@@ -181,6 +181,16 @@ server.post("/mail", async (req, res) => {
 
 server.post("/register", async (req, res) => {
   const { event, participants, teams, platform, userToken } = req.body;
+  req.body.participants.forEach((participant, index) => {
+    if (participant.name === "") {
+      delete req.body.participants[index];
+    }
+  });
+  req.body.teams.forEach((team, index) => {
+    team.participants.forEach((participant) => {
+      if (participant === "") delete req.body.teams[index];
+    });
+  });
   const data = {
     event,
     participants,
@@ -253,8 +263,12 @@ server.post("/register", async (req, res) => {
           teams.forEach((team) => {
             team.participants.forEach((participant, innerIndex) => {
               if (index !== innerIndex) {
-                formPhones.push(participant.phone);
-                formNames.push(participant.name);
+                if (participant.phone !== "") {
+                  formPhones.push(participant.phone);
+                }
+                if (participant.name !== "") {
+                  formNames.push(participant.name);
+                }
               }
             });
           });
